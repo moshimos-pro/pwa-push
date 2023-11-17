@@ -1,0 +1,106 @@
+<!-- [Navigator.setAppBadgeを使って、iOS16.4のPWA（Progressive web apps）にアプリケーションバッジを付ける 📛 - みかづきブログ・カスタム](https://blog.kimizuka.org/entry/2023/03/31/215356) -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pwa app badge</title>
+  <link rel="manifest" href="./manifest.json" />
+</head>
+
+<body>
+  <button class="push">push</button>
+  <button class="badge">badge</button>
+  <button class="clear">clear</button>
+  <button class="reload">reload</button>
+  <p id="permission"></p>
+  <p id="token"></p>
+  <p id="message"></p>
+  <p id="sw"></p>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
+    import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-messaging.js';
+
+    // Your web app's Firebase configuration
+    var firebaseConfig = {
+      apiKey: "AIzaSyD9_0I_o2myJQOztMhXlcm7ddC1cMLyB9w",
+      authDomain: "mzdao-pwa-push-dev.firebaseapp.com",
+      projectId: "mzdao-pwa-push-dev",
+      storageBucket: "mzdao-pwa-push-dev.appspot.com",
+      messagingSenderId: "421211378761",
+      appId: "1:421211378761:web:1f50b9f4b766b2acc79b98"
+    };
+
+    // Initialize Firebase
+    const firebaseApp = initializeApp(firebaseConfig);
+    const messaging = getMessaging(firebaseApp);
+
+    console.log(messaging);
+
+    document.querySelector('.push').addEventListener('click', requestPermission);
+    document.querySelector('.badge').addEventListener('click', () => {
+      navigator.setAppBadge(0 | Math.random() * 9 + 1);
+    });
+    document.querySelector('.clear').addEventListener('click', () => {
+      navigator.setAppBadge(0);
+    });
+    document.querySelector('.reload').addEventListener('click', () => {
+      location.reload();
+    });
+
+    function requestPermission() {
+      if (!window.Notification) {
+        return;
+      }
+
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          // 通知を許可した場合
+          updateText('permission', 'Notification permission granted.')
+
+          getToken(messaging).then((currentToken) => {
+            if (currentToken) {
+              // トークン取得成功
+              updateText('token', currentToken);
+              navigator.clipboard.writeText(currentToken);
+            } else {
+              // トークン取得失敗
+              updateText('token', 'No Instance ID token available. Request permission to generate one.');
+            }
+          }).catch((err) => {
+            // トークン取得失敗
+            updateText('token', `An error occurred while retrieving token. ${err}`);
+          });
+        } else {
+          // 通知を拒否した場合
+          updateText('permission', 'Unable to get permission to notify.')
+        }
+      });
+    }
+
+    function updateText(id, text) {
+      console.log(id, text);
+      document.getElementById(id).innerText = text;
+    }
+
+    // こちらだと、バックグラウンドから通知を開いたときに画面が更新されない
+    onMessage(messaging, (payload) => {
+      console.log('Message received. ', payload);
+      updateText('message', JSON.stringify(payload));
+    });
+
+    // こちらは、バックグラウンドから通知を開いたときに画面が更新される
+    navigator.serviceWorker.addEventListener('message', event => {
+      console.log('from serviceWorker', event.data);
+      if ('notification' in event.data) {
+        const { title, body } = event.data.notification;
+        updateText('sw', `${title}: ${body}`);
+      }
+    });
+  </script>
+</body>
+
+</html>

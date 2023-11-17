@@ -12,6 +12,7 @@
 
 <body>
   <button class="push">push</button>
+  <button class="copy">copy</button>
   <button class="badge">badge</button>
   <button class="clear">clear</button>
   <button class="reload">reload</button>
@@ -49,6 +50,15 @@
     });
     document.querySelector('.reload').addEventListener('click', () => {
       location.reload();
+    });
+    document.querySelector('.copy').addEventListener('click', () => {
+      const token = document.getElementById('token').innerText;
+      navigator.clipboard.writeText(token);
+      if (token) {
+        alert(`copied: ${token}`);
+      } else {
+        alert('token is empty');
+      }
     });
 
     function requestPermission() {

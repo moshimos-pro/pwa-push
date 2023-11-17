@@ -20,3 +20,10 @@ firebase.initializeApp({
 // Retrieve an instance of Firebase Messaging so that it can handle background
 // messages.
 const messaging = firebase.messaging();
+
+// バッジを設定
+let badgeCount = 0;
+self.addEventListener('push', event => {
+  badgeCount += 1;
+  navigator.setAppBadge(badgeCount);
+});
